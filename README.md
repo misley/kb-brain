@@ -9,12 +9,12 @@
 
 ## 🧠 **Overview**
 
-KB Brain is an intelligent knowledge management system that combines GPU-accelerated processing, MCP (Model Context Protocol) integration, and screen-based monitoring to provide powerful knowledge base capabilities for AI assistants like Claude.
+KB Brain is an intelligent knowledge management system that combines GPU-accelerated processing, MCP (Model Context Protocol) integration, and screen-based monitoring to provide powerful knowledge base capabilities for AI assistants.
 
 ## ⚡ **Key Features**
 
 - **🚀 Hybrid GPU/CPU Processing** - Automatic GPU acceleration with CPU fallback
-- **🔌 MCP Integration** - Seamless integration with Claude via MCP server
+- **🔌 MCP Integration** - Seamless integration with AI assistants via MCP server
 - **🖥️ Screen Monitoring** - Multi-worker screen sessions for long-running tasks
 - **📊 Intelligent Search** - Advanced similarity search with machine learning
 - **🔧 Auto-Optimization** - Startup optimization and persistent state management
