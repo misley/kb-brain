@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "kb-brain-hybrid-gpu": {
+      "command": "wsl",
+      "args": [
+        "-e",
+        "/tmp/kb_brain_venv/bin/python",
+        "/tmp/kb_brain_venv/lib/python3.12/site-packages/kb_brain/mcp_server_hybrid.py"
+      ]
+    }
+  }
+}
