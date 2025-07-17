@@ -50,6 +50,11 @@ setup(
             "networkx>=3.0",
             "matplotlib>=3.6.0",
         ],
+        "performance": [
+            "intel-extension-for-scikit-learn>=2024.0.0",
+            "numba>=0.58.0",
+            "scipy>=1.10.0",
+        ],
         "dev": [
             "pytest>=7.0.0",
             "pytest-asyncio>=0.21.0",
@@ -67,6 +72,9 @@ setup(
             "aiofiles>=23.0.0",
             "networkx>=3.0",
             "matplotlib>=3.6.0",
+            "intel-extension-for-scikit-learn>=2024.0.0",
+            "numba>=0.58.0",
+            "scipy>=1.10.0",
         ],
     },
     entry_points={
@@ -78,6 +86,8 @@ setup(
             "kb-brain-intelligence=kb_brain.intelligence.intelligence_system:main",
             "kb-brain-sme=kb_brain.intelligence.sme_agent_system:main",
             "kb-brain-consolidate=kb_brain.intelligence.kb_consolidation_system:main",
+            "kb-brain-optimize=kb_brain.performance.cpu_optimizer:main",
+            "kb-brain-benchmark=kb_brain.performance.performance_integration:main",
         ],
     },
     include_package_data=True,
