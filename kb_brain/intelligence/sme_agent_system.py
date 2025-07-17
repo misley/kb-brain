@@ -18,6 +18,14 @@ from .kb_integration_engine import KBIntegrationEngine, KnowledgeResponse
 from .prompt_classifier import PromptClassifier, PromptClassification
 from .knowledge_ingestion import KnowledgeIngestionSystem
 
+# Import performance optimizations
+try:
+    from ..performance.performance_integration import PerformanceManager
+    PERFORMANCE_AVAILABLE = True
+except ImportError:
+    PERFORMANCE_AVAILABLE = False
+    logger.warning("Performance optimizations not available for SME system")
+
 logger = logging.getLogger(__name__)
 
 
@@ -113,7 +121,8 @@ class SMEAgentSystem:
     def __init__(self, 
                  base_kb_path: str = "/mnt/c/Users/misley/Documents/Projects/kb-brain",
                  specialization_threshold: float = 0.7,
-                 max_sme_depth: int = 3):
+                 max_sme_depth: int = 3,
+                 enable_performance_optimizations: bool = True):
         """
         Initialize SME Agent System
         
@@ -121,10 +130,17 @@ class SMEAgentSystem:
             base_kb_path: Base path for knowledge bases
             specialization_threshold: Threshold for creating new SME
             max_sme_depth: Maximum depth of SME hierarchy
+            enable_performance_optimizations: Enable CPU performance optimizations
         """
         self.base_kb_path = Path(base_kb_path)
         self.specialization_threshold = specialization_threshold
         self.max_sme_depth = max_sme_depth
+        
+        # Initialize performance manager
+        self.performance_manager = None
+        if enable_performance_optimizations and PERFORMANCE_AVAILABLE:
+            self.performance_manager = PerformanceManager(auto_optimize=True)
+            logger.info("🚀 SME System performance optimizations enabled")
         
         # Agent tracking
         self.agents: Dict[str, SMEAgent] = {}
@@ -141,6 +157,10 @@ class SMEAgentSystem:
         self.query_routing_stats: Dict[str, int] = {}
         
         self._initialize_system()
+        
+        # Integrate performance optimizations with existing agents
+        if self.performance_manager:
+            self._integrate_performance_optimizations()
         
         logger.info("SME Agent System initialized")
     
@@ -298,6 +318,26 @@ class SMEAgentSystem:
         # TODO: Integrate with query routing stats and solution success tracking
         
         return domain_stats
+    
+    def _integrate_performance_optimizations(self):
+        """Integrate performance optimizations with SME agents"""
+        if not self.performance_manager:
+            return
+        
+        logger.info("🔧 Integrating performance optimizations with SME agents")
+        
+        # Integrate with the SME system
+        self.performance_manager.integrate_with_sme_system(self)
+        
+        # Optimize each agent's KB engine
+        optimized_count = 0
+        for agent_id, agent in self.agents.items():
+            if agent.kb_engine:
+                # The performance manager will optimize the KB engine
+                logger.debug(f"Performance optimizations applied to agent {agent_id}")
+                optimized_count += 1
+        
+        logger.info(f"✅ Performance optimizations integrated with {optimized_count} SME agents")
     
     async def route_query(self, 
                          prompt: str, 

@@ -13,6 +13,14 @@ from enum import Enum
 import logging
 from datetime import datetime, timedelta
 
+# Import performance optimizations
+try:
+    from ..performance.performance_integration import PerformanceManager
+    PERFORMANCE_AVAILABLE = True
+except ImportError:
+    PERFORMANCE_AVAILABLE = False
+    logger.warning("Performance optimizations not available for KB Integration Engine")
+
 logger = logging.getLogger(__name__)
 
 
@@ -71,11 +79,19 @@ class KnowledgeResponse:
 class KBIntegrationEngine:
     """Advanced knowledge base integration and search engine"""
     
-    def __init__(self, kb_system_path: str = "/mnt/c/Users/misley/Documents/Projects/kb_system"):
+    def __init__(self, kb_system_path: str = "/mnt/c/Users/misley/Documents/Projects/kb_system",
+                 enable_performance_optimizations: bool = True):
         self.kb_system_path = Path(kb_system_path)
         self.knowledge_sources = {}
         self.repository_map = {}
         self.domain_index = {}
+        
+        # Initialize performance manager
+        self.performance_manager = None
+        if enable_performance_optimizations and PERFORMANCE_AVAILABLE:
+            self.performance_manager = PerformanceManager(auto_optimize=True)
+            logger.info("🚀 KB Integration Engine performance optimizations enabled")
+        
         self._initialize_engine()
     
     def _initialize_engine(self):
@@ -406,12 +422,47 @@ class KBIntegrationEngine:
                any(indicator in key.lower() for indicator in problem_indicators)
     
     def _calculate_relevance(self, query: str, content: Any) -> float:
-        """Calculate relevance score for content against query"""
+        """Calculate relevance score for content against query with performance optimization"""
         
         content_str = json.dumps(content).lower() if not isinstance(content, str) else content.lower()
         query_words = set(query.split())
         
-        # Exact matches get higher scores
+        # Try performance-optimized similarity computation for longer texts
+        if self.performance_manager and len(content_str) > 100:
+            try:
+                # Use TF-IDF based similarity if available
+                import numpy as np
+                from sklearn.feature_extraction.text import TfidfVectorizer
+                
+                # Create simple TF-IDF vectors
+                vectorizer = TfidfVectorizer(max_features=1000, stop_words='english')
+                texts = [query.lower(), content_str]
+                
+                try:
+                    tfidf_matrix = vectorizer.fit_transform(texts)
+                    
+                    # Use performance-optimized similarity calculation
+                    result = self.performance_manager.optimize_similarity_computation(
+                        tfidf_matrix.toarray(), 
+                        tfidf_matrix[0].toarray(),
+                        top_k=1,
+                        metric="cosine"
+                    )
+                    
+                    similarities = result["similarities"]
+                    if similarities and "scores" in similarities:
+                        # Get similarity score (first result is self-similarity, second is content)
+                        similarity_score = similarities["scores"][0] if len(similarities["scores"]) > 0 else 0.0
+                        logger.debug(f"🚀 Used {result['method']} for relevance calculation: {similarity_score:.3f}")
+                        return float(similarity_score)
+                        
+                except Exception as e:
+                    logger.debug(f"Performance optimization failed, using fallback: {e}")
+                    
+            except Exception as e:
+                logger.debug(f"Could not use performance optimization: {e}")
+        
+        # Fallback to simple text matching
         exact_matches = sum(1 for word in query_words if word in content_str)
         
         # Partial matches

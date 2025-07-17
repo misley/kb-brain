@@ -28,16 +28,20 @@ def continue_cli():
 @click.option('--port', default=8080, help='Server port')
 @click.option('--kb-root', help='KB Brain data directory')
 @click.option('--debug', is_flag=True, help='Enable debug mode')
-def start(port, kb_root, debug):
+@click.option('--optimize-performance', is_flag=True, default=True, help='Enable performance optimizations (default: enabled)')
+def start(port, kb_root, debug, optimize_performance):
     """Start KB Brain Continue integration server"""
     
     console.print(f"🚀 Starting KB Brain Continue server on port {port}")
     
+    if optimize_performance:
+        console.print("🚀 Performance optimizations enabled")
+    
     try:
         from kb_brain.integrations.continue_adapter import ContinueAdapter
         
-        # Create adapter
-        adapter = ContinueAdapter()
+        # Create adapter with performance optimization settings
+        adapter = ContinueAdapter(enable_performance_optimizations=optimize_performance)
         
         # Start server
         asyncio.run(adapter.start_continue_server(port))

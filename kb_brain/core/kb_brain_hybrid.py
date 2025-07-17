@@ -13,6 +13,14 @@ from dataclasses import dataclass
 import hashlib
 import warnings
 
+# Import performance optimizations
+try:
+    from ..performance.performance_integration import PerformanceManager
+    PERFORMANCE_AVAILABLE = True
+except ImportError:
+    PERFORMANCE_AVAILABLE = False
+    warnings.warn("Performance optimizations not available")
+
 # Test CuPy availability
 try:
     import cupy as cp
@@ -49,11 +57,18 @@ class HybridSolutionCandidate:
     embedding: Optional[np.ndarray] = None
 
 class HybridGPUKBBrain:
-    """Hybrid GPU/CPU KB Brain using CuPy + scikit-learn"""
+    """Hybrid GPU/CPU KB Brain using CuPy + scikit-learn with performance optimizations"""
     
-    def __init__(self, kb_root: str = "/tmp/kb_brain_venv/lib/python3.12/site-packages/kb_brain/data"):
+    def __init__(self, kb_root: str = "/tmp/kb_brain_venv/lib/python3.12/site-packages/kb_brain/data", 
+                 enable_performance_optimizations: bool = True):
         self.kb_root = Path(kb_root)
         self.use_gpu = CUPY_AVAILABLE
+        
+        # Initialize performance manager
+        self.performance_manager = None
+        if enable_performance_optimizations and PERFORMANCE_AVAILABLE:
+            self.performance_manager = PerformanceManager(auto_optimize=True)
+            print("🚀 Performance optimizations enabled (Intel extensions + JIT compilation)")
         
         # Initialize models
         self.vectorizer = None
@@ -137,47 +152,64 @@ class HybridGPUKBBrain:
                 texts=self.solution_texts
             )
     
-    def _gpu_accelerated_similarity(self, query_vector: np.ndarray, embeddings_matrix: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-        """GPU-accelerated similarity computation using CuPy"""
-        if not self.use_gpu:
-            # CPU fallback
-            similarities = cosine_similarity(query_vector, embeddings_matrix).flatten()
-            # Convert to distances and get top indices
-            distances = 1 - similarities
-            indices = np.argsort(distances)[:10]
-            return distances[indices], indices
+    def _optimized_similarity_computation(self, query_vector: np.ndarray, embeddings_matrix: np.ndarray, top_k: int = 10) -> Tuple[np.ndarray, np.ndarray]:
+        """Performance-optimized similarity computation with fallback strategy"""
         
-        try:
-            # Move to GPU
-            query_gpu = cp.asarray(query_vector)
-            embeddings_gpu = cp.asarray(embeddings_matrix)
-            
-            # Compute cosine similarities on GPU
-            query_norm = cp.linalg.norm(query_gpu, axis=1, keepdims=True)
-            embeddings_norm = cp.linalg.norm(embeddings_gpu, axis=1, keepdims=True)
-            
-            # Normalized dot product = cosine similarity
-            similarities = cp.dot(query_gpu, embeddings_gpu.T) / (query_norm * embeddings_norm.T)
-            similarities = similarities.flatten()
-            
-            # Convert to distances and get top indices
-            distances = 1 - similarities
-            indices = cp.argsort(distances)[:10]
-            
-            # Move back to CPU
-            distances_cpu = cp.asnumpy(distances[indices])
-            indices_cpu = cp.asnumpy(indices)
-            
-            return distances_cpu, indices_cpu
-            
-        except Exception as e:
-            print(f"⚠️  GPU similarity computation failed: {e}")
-            print("🔄 Falling back to CPU...")
-            # CPU fallback
-            similarities = cosine_similarity(query_vector, embeddings_matrix).flatten()
-            distances = 1 - similarities
-            indices = np.argsort(distances)[:10]
-            return distances[indices], indices
+        # Try performance-optimized computation first
+        if self.performance_manager:
+            try:
+                result = self.performance_manager.optimize_similarity_computation(
+                    embeddings_matrix, query_vector, top_k=top_k, metric="cosine"
+                )
+                
+                similarities = result["similarities"]
+                indices = similarities["indices"]
+                scores = similarities["scores"]
+                distances = 1 - scores  # Convert similarity to distance
+                
+                print(f"🚀 Used {result['method']} optimization (took {result['processing_time']:.3f}s)")
+                return distances, indices
+                
+            except Exception as e:
+                print(f"⚠️  Performance-optimized computation failed: {e}")
+                print("🔄 Falling back to GPU/CPU...")
+        
+        # GPU acceleration fallback
+        if self.use_gpu:
+            try:
+                # Move to GPU
+                query_gpu = cp.asarray(query_vector)
+                embeddings_gpu = cp.asarray(embeddings_matrix)
+                
+                # Compute cosine similarities on GPU
+                query_norm = cp.linalg.norm(query_gpu, axis=1, keepdims=True)
+                embeddings_norm = cp.linalg.norm(embeddings_gpu, axis=1, keepdims=True)
+                
+                # Normalized dot product = cosine similarity
+                similarities = cp.dot(query_gpu, embeddings_gpu.T) / (query_norm * embeddings_norm.T)
+                similarities = similarities.flatten()
+                
+                # Convert to distances and get top indices
+                distances = 1 - similarities
+                indices = cp.argsort(distances)[:top_k]
+                
+                # Move back to CPU
+                distances_cpu = cp.asnumpy(distances[indices])
+                indices_cpu = cp.asnumpy(indices)
+                
+                print("🎯 Used GPU acceleration")
+                return distances_cpu, indices_cpu
+                
+            except Exception as e:
+                print(f"⚠️  GPU similarity computation failed: {e}")
+                print("🔄 Falling back to CPU...")
+        
+        # CPU fallback
+        similarities = cosine_similarity(query_vector, embeddings_matrix).flatten()
+        distances = 1 - similarities
+        indices = np.argsort(distances)[:top_k]
+        print("💻 Used CPU fallback")
+        return distances[indices], indices
     
     def rebuild_knowledge_index(self):
         """Rebuild knowledge index with hybrid GPU/CPU processing"""
@@ -257,8 +289,8 @@ class HybridGPUKBBrain:
             solution_ids = list(self.knowledge_embeddings.keys())
             embeddings_matrix = np.array([self.knowledge_embeddings[sid] for sid in solution_ids])
             
-            # GPU-accelerated similarity search
-            distances, indices = self._gpu_accelerated_similarity(problem_array, embeddings_matrix)
+            # Performance-optimized similarity search
+            distances, indices = self._optimized_similarity_computation(problem_array, embeddings_matrix, top_k)
             
             # Create hybrid candidates
             candidates = []
@@ -436,7 +468,7 @@ class HybridGPUKBBrain:
     
     def get_system_status(self) -> Dict:
         """Get system status compatible with base class"""
-        return {
+        status = {
             'total_solutions': len(self.solution_metadata),
             'total_patterns': len(self.knowledge_embeddings),
             'avg_success_rate': self._calculate_avg_success_rate(),
@@ -444,6 +476,12 @@ class HybridGPUKBBrain:
             'kb_files_count': len(list(self.kb_root.rglob("*.json"))),
             'hybrid_gpu_status': self.get_hybrid_status()
         }
+        
+        # Add performance optimization status
+        if self.performance_manager:
+            status['performance_optimizations'] = self.performance_manager.get_optimization_status()
+        
+        return status
     
     def _calculate_avg_success_rate(self) -> float:
         """Calculate average success rate across all solutions"""
