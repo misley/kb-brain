@@ -79,9 +79,12 @@ class KnowledgeResponse:
 class KBIntegrationEngine:
     """Advanced knowledge base integration and search engine"""
     
-    def __init__(self, kb_system_path: str = "/mnt/c/Users/misley/Documents/Projects/kb_system",
+    def __init__(self, kb_system_path: Optional[str] = None,
                  enable_performance_optimizations: bool = True):
-        self.kb_system_path = Path(kb_system_path)
+        # Import settings here to avoid circular imports
+        from ..config.settings import Settings
+        
+        self.kb_system_path = Path(kb_system_path) if kb_system_path else Settings.KB_SYSTEM_PATH
         self.knowledge_sources = {}
         self.repository_map = {}
         self.domain_index = {}

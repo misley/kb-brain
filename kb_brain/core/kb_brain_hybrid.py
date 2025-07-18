@@ -59,9 +59,12 @@ class HybridSolutionCandidate:
 class HybridGPUKBBrain:
     """Hybrid GPU/CPU KB Brain using CuPy + scikit-learn with performance optimizations"""
     
-    def __init__(self, kb_root: str = "/tmp/kb_brain_venv/lib/python3.12/site-packages/kb_brain/data", 
+    def __init__(self, kb_root: Optional[str] = None, 
                  enable_performance_optimizations: bool = True):
-        self.kb_root = Path(kb_root)
+        # Import settings here to avoid circular imports
+        from ..config.settings import Settings
+        
+        self.kb_root = Path(kb_root) if kb_root else Settings.KB_DATA_PATH
         self.use_gpu = CUPY_AVAILABLE
         
         # Initialize performance manager

@@ -12,12 +12,12 @@ with open("requirements.txt", "r", encoding="utf-8") as fh:
 setup(
     name="kb-brain",
     version="1.1.0",
-    author="NPS Data Science Team",
-    author_email="noreply@nps.gov",
+    author="Research Team",
+    author_email="info@example.org",
     description="Intelligent Knowledge Base Brain with Hierarchical SME Agents",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/misley/kb-brain",
+    url="https://github.com/organization/kb-brain",
     packages=find_packages(),
     classifiers=[
         "Development Status :: 4 - Beta",

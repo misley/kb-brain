@@ -7,14 +7,26 @@ echo "=== Fixing DOI SSL Certificates in WSL ==="
 echo "This will enable nvm/node and other tools to work on corporate network"
 echo ""
 
-# Certificate files
-DOI_CERT="/mnt/c/Users/misley/Documents/Projects/doi_cacert.pem"
-BUNDLE_CERT="/mnt/c/Users/misley/Documents/Projects/cacert.pem"
+# Certificate files - Use environment variables with secure defaults
+DOI_CERT="${DOI_CERT_PATH:-${HOME}/doi_cacert.pem}"
+BUNDLE_CERT="${BUNDLE_CERT_PATH:-${HOME}/ca-certificates.crt}"
 
 # Verify certificates exist
 if [ ! -f "$DOI_CERT" ]; then
-    echo "Error: DOI certificate not found at $DOI_CERT"
-    exit 1
+    echo "Warning: Custom certificate not found at $DOI_CERT"
+    echo "If you have custom certificates, set DOI_CERT_PATH environment variable"
+    echo "Continuing with system certificates only..."
+    
+    # Use system certificates only
+    if [ -f "/etc/ssl/certs/ca-certificates.crt" ]; then
+        echo "Using system certificates"
+        BUNDLE_CERT="/etc/ssl/certs/ca-certificates.crt"
+    else
+        echo "Error: No SSL certificates found"
+        exit 1
+    fi
+else
+    echo "Found custom certificate: $DOI_CERT"
 fi
 
 echo "Found DOI certificate: $DOI_CERT"

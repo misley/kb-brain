@@ -119,7 +119,7 @@ class SMEAgentSystem:
     """Hierarchical SME Agent Management System"""
     
     def __init__(self, 
-                 base_kb_path: str = "/mnt/c/Users/misley/Documents/Projects/kb-brain",
+                 base_kb_path: Optional[str] = None,
                  specialization_threshold: float = 0.7,
                  max_sme_depth: int = 3,
                  enable_performance_optimizations: bool = True):
@@ -127,12 +127,15 @@ class SMEAgentSystem:
         Initialize SME Agent System
         
         Args:
-            base_kb_path: Base path for knowledge bases
+            base_kb_path: Base path for knowledge bases (uses Settings if None)
             specialization_threshold: Threshold for creating new SME
             max_sme_depth: Maximum depth of SME hierarchy
             enable_performance_optimizations: Enable CPU performance optimizations
         """
-        self.base_kb_path = Path(base_kb_path)
+        # Import settings here to avoid circular imports
+        from ..config.settings import Settings
+        
+        self.base_kb_path = Path(base_kb_path) if base_kb_path else Settings.KB_BRAIN_PATH
         self.specialization_threshold = specialization_threshold
         self.max_sme_depth = max_sme_depth
         
@@ -785,7 +788,8 @@ class SMEAgentSystem:
         unified_kb_dir.mkdir(exist_ok=True)
         
         # Migrate existing knowledge bases
-        original_kb_path = Path("/mnt/c/Users/misley/Documents/Projects/kb_system")
+        from ..config.settings import Settings
+        original_kb_path = Settings.KB_SYSTEM_PATH
         
         if original_kb_path.exists():
             import shutil
