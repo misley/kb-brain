@@ -108,3 +108,21 @@ integrations/chatgpt_client_integration.py
 config.local.json
 settings.local.yaml
 .env.local
+
+# Security - Environment configuration files
+.env
+.env.*
+*.pem
+*.crt
+*.key
+doi_cacert.pem
+cacert.pem
+
+# Security - API keys and credentials
+api_keys.json
+credentials.json
+secrets.json
+
+# Security - Personal/organizational identifiers
+**/personal_config.json
+**/org_config.json
